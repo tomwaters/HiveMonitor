@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Hive Monitor - Home</title>
+        <link rel="stylesheet" href="/css/bootstrap.min.css">
+        <script src="/js/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        <script src="/js/moment.min.js"></script>
+        <script src="/js/Chart.min.js"></script>
+        <style>
+			html, head, body {
+				height: 100%;
+			}
+            body {
+                padding-top: 5rem;
+            }
+        </style>
+        <script>
+            function getLatest() {
+                $('#LatestLoading').show().siblings().hide();
+                $.get('/api/latest', function(data) {
+                    $('#LatestFrom').text('Current Status: ' + data[0].ReceivedFrom);
+                    $('#LatestTemp1').text(data[0].Temperature1 + '°C');
+					$('#LatestHumidity1').text(data[0].Humidity1);
+					$('#LatestTemp2').text(data[0].Temperature2 + '°C');
+					$('#LatestBatt').text(data[0].Battery + '%');
+                    $('#LatestAt').text('Updated ' + moment(data[0].ReceivedAt).fromNow());
+
+                    $('#LatestLoading').hide().siblings().show();
+                });
+            }
+
+			function updateChart(range) {
+				$.get('/api/Last' + range, function(data) {
+					chart.data.datasets.forEach((dataset) => {
+						dataset.data.pop();
+					});
+
+					chart.data.datasets[0].data = data.map(currentValue => ({ 'x': new Date(currentValue.Time), 'y': currentValue.AvgTemp1}));
+					chart.data.datasets[1].data = data.map(currentValue => ({ 'x': new Date(currentValue.Time), 'y': currentValue.AvgHumidity}));
+					chart.data.datasets[2].data = data.map(currentValue => ({ 'x': new Date(currentValue.Time), 'y': currentValue.AvgTemp2}));
+
+					chart.update();
+				});
+			}
+			
+			var chart;
+            $(document).ready(function() {
+				var ctx = $("#Chart")[0].getContext('2d');
+				chart = new Chart(ctx, {
+					responsive: true,
+					maintainAspectRatio: true,
+					type: 'line',
+					data: {
+						datasets: [{
+							label: 'Outside Temp',
+							backgroundColor: 'rgba(0,255,0,0.5)',
+							borderColor: 'rgba(0,255,0,0.5)',
+							fill: false,
+							data: []
+						},
+						{
+							label: 'Outside Humidity',
+							backgroundColor: 'rgba(255,0,0,0.5)',
+							borderColor: 'rgba(255,0,0,0.5)',
+							fill: false,
+							data: []
+						},
+						{
+							label: 'Inside Temp',
+							backgroundColor: 'rgba(0,0,255,0.5)',
+							borderColor: 'rgba(0,0,255,0.5)',
+							fill: false,
+							data: []
+						}]
+					},
+					options: {
+						scales: {
+							xAxes: [{
+								type: 'time',
+								time: {
+									displayFormats: {
+										minute: 'hh:mm',
+										hour: 'DD MMM hh:mm'
+									}
+								}
+							}],
+							yAxes: [{
+								ticks: {
+									callback: function(value, index, values) {
+										return value + '°C';
+									}
+								}
+							}]
+						}
+					}
+				});
+				
+                updateChart('24Hours');
+                getLatest();
+
+                $('#ChartButtons a').click(function() {
+                    updateChart($(this).attr('data-filter'));
+                    $(this).addClass('active').siblings().removeClass('active');
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+            <a class="navbar-brand" href="#">Hive Monitor</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        
+            <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+                <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/logs.html">Logs</a>
+                </li>
+                </ul>
+            </div>
+        </nav>
+
+		<div class="container h-100">
+			<div class="row">
+				<div class="col"></div>
+				<div class="col-lg-8 col-md-12">
+					<div class="card mb-3">
+						<div id="LatestBody" class="card-body" style="display:none;">
+							<h5 id="LatestFrom" class="card-title"></h5>
+							<div>
+								<div class="d-inline-block mr-2">
+									<div class="text-muted">Outside Temperature</div>
+									<h3 id="LatestTemp1"></h3>
+								</div>
+								<div class="d-inline-block mr-2">
+									<div class="text-muted">Outside Humidity</div>
+									<h3 id="LatestHumidity1"></h3>
+								</div>
+								<div class="d-inline-block mr-2">
+									<div class="text-muted">Inside Temperature</div>
+									<h3 id="LatestTemp2"></h3>
+								</div>
+								
+								<div class="d-inline-block mr-2">
+									<div class="text-muted">Battery</div>
+									<h3 id="LatestBatt"></h3>
+								</div>
+								<div class="col-md-auto"></div>	
+							</div>
+							
+							<p class="card-text"><small id="LatestAt" class="text-muted"></small></p>
+						</div>
+						<div id="LatestLoading" class="card-body">
+							<img src="/loading.gif" />
+						</div>
+					</div>
+			
+					<div id="ChartButtons" class="btn-group">
+						<a href="#" class="btn btn-secondary buttons-html5 active" role="button" aria-pressed="true" data-filter="24Hours">24 Hours</a>
+						<a href="#" class="btn btn-secondary buttons-html5" role="button" aria-pressed="true" data-filter="7Days">7 Days</a>
+						<a href="#" class="btn btn-secondary buttons-html5" role="button" aria-pressed="true" data-filter="6Months">6 Months</a>
+					</div>
+
+					<div class="mb-3">
+						<canvas id="Chart" class=""></canvas>
+					</div>
+			
+				</div>
+				<div class="col"></div>
+			</div>			
+        </div>
+    </body>
+</html>

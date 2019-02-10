@@ -1,0 +1,26 @@
+{
+  "name": "bee-web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "bootstrap": "^4.1.1",
+    "chart.js": "^2.7.2",
+    "datatables.net-bs4": "^1.10.16",
+    "datatables.net-buttons-bs4": "^1.5.1",
+    "express": "^4.16.3",
+    "jquery": "^3.3.1",
+    "jszip": "^3.1.5",
+    "moment": "^2.22.2",
+    "mysql": "^2.15.0",
+    "pdfmake": "^0.1.36",
+    "ps-node": "^0.1.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
